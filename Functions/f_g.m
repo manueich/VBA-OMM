@@ -1,5 +1,5 @@
 function [gx,dG_dX,dG_dPhi] = f_g(Xt,Phi,ut,inG)
-% Direct Maping g(x) = x
+% Observation function y(t) = G(t)
 
 gx = Xt(1);
 dG_dX = [1;0];

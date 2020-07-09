@@ -1,6 +1,16 @@
 function [h] = f_plotUncTimeSeries( t,x,col,LW,up,lo )
-%F_PLOTUNCTIMESERIES Summary of this function goes here
-%   Detailed explanation goes here
+%F_PLOTUNCTIMESERIES plots a solid line and shaded area indicating
+%uncertainty
+%   IN:
+%       t: x values
+%       x: y values of solid line
+%       col: RGB triplet specifining color of solid line
+%       LW: scalare specifying line width
+%       up: upper uncertainty limit
+%       lo: lower uncertainty limit. If lo is missing, the function assumes
+%       up to be the symmetric standard deviation
+%   OUT:
+%       h: axes handle
 
 t = t(:)';
 x = x(:)';

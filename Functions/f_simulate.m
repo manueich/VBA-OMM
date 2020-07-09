@@ -1,6 +1,18 @@
-function [X,Ra,SigX,SigRa] = f_simulate(p,u,options,fname)
-%F_SIMULATE Summary of this function goes here
-%   Detailed explanation goes here
+function [X,Ra,SigX,SigRa,RaComp] = f_simulate(p,u,options,fname)
+%F_SIMULATE Simulates the model whith specific set of parameters
+%   IN:
+%       p: Structure containing model parameters muTheta, SigmaTheta and
+%       initial conditions muX0 and SigmaX0
+%       u: input to the toolbox (time,Insulin,Rap)
+%       options: Toolbox options structure
+%       fname: handle to function implementing the model
+%   OUT:
+%       X: time course of model states
+%       Ra: time course of glucose appearance
+%       SigX: uncertainty (SD) in the model states
+%       SigRa: uncertainty (SD) in glucose appearance
+%       RaComp: structure containing time courses of input function
+%       components in the case of RaLN
 
 % Preallocate variables
 SigX = cell(length(u),1);
@@ -57,12 +69,21 @@ for i=1:size(u,2)-1
     end   
     
     Ra(i) = feval(fname,u(1,i),p.muTheta,options.inF) + u(3,i);
+    try 
+        [~,f1(i),f2(i)] = feval(fname,u(1,i),p.muTheta,options.inF);
+    end
 end
 
 SigX = sqrt(VBA_getVar(SigX,length(SigX)));
 SigRa = sqrt(VBA_getVar(SigRa,length(SigRa)));
 
 Ra(end+1) = feval(fname,u(1,end),p.muTheta,options.inF) + u(3,end);
-
+try 
+    [~,f1(end+1),f2(end+1)] = feval(fname,u(1,end),p.muTheta,options.inF);
+    RaComp.f1 = f1;
+    RaComp.f2 = f2;
+catch
+    RaComp = [];
+end
 end
 

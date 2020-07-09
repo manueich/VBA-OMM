@@ -1,7 +1,6 @@
 function [fx,dF_dX,dF_dTheta] = f_OMM_RaLN(X,th,u,inF)
 % OMM with log-normal GA function
-
-%% -----------------------------
+%-----------------------------
 nf = 3;
 
 %% -----------------------
@@ -52,24 +51,26 @@ if nargin == 3
 t = X;
 inF = u;
 
-fx = RaLN(t,th,inF.A);
+[fx,dF_dX,dF_dTheta] = RaLN(t,th,inF.A);
 
 end
 
 end
 
-function [y] = RaLN(t,th,A)
+function [y,f1,f2] = RaLN(t,th,A)
 
 nf = 3;
 
 if t==0
-    y=0;
+    y = 0;
+    f1 = 0;
+    f2 = 0;
 else
     Rh = 1/(1+exp(-th(nf+5)));
-    fu1 = (1-Rh)*A./(t*sqrt(exp(th(nf+2))*pi)).*exp(-(log(t/exp(th(nf+1)))-exp(th(nf+2))/2).^2/exp(th(nf+2)));
-    fu2 = A*Rh./(t*sqrt(exp(th(nf+4))*pi)).*exp(-(log(t/exp(th(nf+3)))-exp(th(nf+4))/2).^2/exp(th(nf+4)));
+    f1 = (1-Rh)*A./(t*sqrt(exp(th(nf+2))*pi)).*exp(-(log(t/exp(th(nf+1)))-exp(th(nf+2))/2).^2/exp(th(nf+2)));
+    f2 = A*Rh./(t*sqrt(exp(th(nf+4))*pi)).*exp(-(log(t/exp(th(nf+3)))-exp(th(nf+4))/2).^2/exp(th(nf+4)));
 
-    y = fu1 + fu2;
+    y = f1 + f2;
 end
 
 end

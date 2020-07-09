@@ -1,7 +1,6 @@
 function [fx,dF_dX,dF_dTheta] = f_OMM_RaPL(X,th,u,inF)
 % OMM with piecewise-linear GA function
-
-%% -----------------------------
+% -----------------------------
 nf = 3;
 
 %% -----------------------
