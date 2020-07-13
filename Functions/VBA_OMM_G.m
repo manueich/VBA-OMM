@@ -87,9 +87,9 @@ end
 
 % Check dat
 try
-    t = dat.t;
-    G = dat.G;
-    I = dat.I;    
+    t = dat.t(:);
+    G = dat.G(:);
+    I = dat.I(:);    
     if t(1)~=0 || length(t)~=length(G) || length(t)~=length(I)
         disp('ERROR: Dat structure is flawed'); out = []; return
     end
@@ -160,9 +160,9 @@ end
 % Construct u
 ti = t(1):dt:t(end);
 Ii = interp1(t,I,ti);
-u(1,:) = ti;
-u(2,:) = Ii-Ib;
-u(3,:) = Rap;
+u(1,:) = ti(1:end-1);
+u(2,:) = Ii(1:end-1)-Ib;
+u(3,:) = Rap(1:end-1);
 
 % Interpolate Data and construct yout
 Gdat = interp1(t,G,t(1):t(end));
@@ -195,6 +195,7 @@ options.MaxIter = 100;
 options.MaxIterInit = 50;
 options.microU = 1;
 options.checkGrads = 0;
+options.f_fname = fname;
 
 % Construct priors
     % - System parameters
@@ -312,7 +313,7 @@ end
 u_temp = u;
 u_temp(1,:) = u_temp(1,:)+ti(end);
 [~,Ra,~,~] = f_simulate(posterior,u_temp,options,fname);
-out.Model_Output.Rap = Ra - u_temp(3,:);
+out.Model_Output.Rap = Ra - [u_temp(3,:) u_temp(3,end)];
 
 % Model output
 [X,Ra,SigX,SigRa] = f_simulate(posterior,u,options,fname);
@@ -331,7 +332,7 @@ out.Performance.AIC = out.VB_Toolbox.out.fit.AIC;
 out.Performance.LL = out.VB_Toolbox.out.fit.LL;
 out.Performance.BIC = out.VB_Toolbox.out.fit.BIC;
     % = - Weighted residulas + RMSE
-for i=1:length(t); idx = find(u(1,:)==t(i)); 
+for i=1:length(t); idx = find(ti==t(i)); 
     wres(i)=(G(i)-out.Model_Output.G(idx))/(0.02*G(i)); 
     RMSE(i)=(G(i)-out.Model_Output.G(idx))^2;
 end

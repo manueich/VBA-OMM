@@ -44,7 +44,7 @@ catch   % Prior
     end    
 end
              
-for i=1:size(u,2)-1
+for i=1:size(u,2)
     [X(:,i+1),Jt,Ht] = feval(fname,X(:,i),p.muTheta,u(:,i),options.inF);
     
     if ~isempty(Jt)
