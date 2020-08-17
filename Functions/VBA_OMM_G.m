@@ -235,7 +235,7 @@ pr.SigmaX0 = diag(sX0);
     % - Measurement error
 [pr.a_sigma,pr.b_sigma] = VBA_Create_NoisePrior(mean(Gdat)*measCV/100,mean(Gdat)*measCV/100*0.1);
 for i=2:length(Gdat)
-    pr.iQy{i-1,1} = Gdat(i)/mean(Gdat);
+    pr.iQy{i-1,1} = 1/(Gdat(i)/mean(Gdat));
 end
 
 options.priors = pr;

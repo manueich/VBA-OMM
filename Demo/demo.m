@@ -3,7 +3,7 @@
 %   must be in the MATLAB path
 clc
 clear
-close all
+%close all
 
 % Load demo glucose and insulin data from Dalla Man et. (2002): "The oral 
 % glucose minimal model: estimation of insulin sensitivity from a meal test"
