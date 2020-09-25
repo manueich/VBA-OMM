@@ -10,7 +10,7 @@ The main function is called VBA_OMM_G.m and contains a detailed description on h
 If you have any questions you can contact me under m.eichenlaub@warwick.ac.uk
 
 # About
-This software has been developed in the context of a PhD project under the supervison of Natasha Khovanova and John Hattersley at the University of Warwick and University Hospitals Coventry and Warwickshire.
+This software has been developed in the context of a PhD project under the supervison of Natasha Khovanova from the School of Engineering at the University of Warwick and John Hattersley from the University Hospitals Coventry and Warwickshire.
 
 # License
 This software is distributed under a GNU open-source licence. You are free to download and modify it, but we would be most grateful, should you acknowledge the authors by citing the reference below.
