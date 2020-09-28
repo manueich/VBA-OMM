@@ -340,7 +340,7 @@ out.Performance.LL = out.VB_Toolbox.out.fit.LL;
 out.Performance.BIC = out.VB_Toolbox.out.fit.BIC;
     % = - Weighted residulas + RMSE
 for i=1:length(t); idx = find(ti==t(i)); 
-    wres(i)=(G(i)-out.Model_Output.G(idx))/(0.02*G(i)); 
+    wres(i)=(G(i)-out.Model_Output.G(idx))/(const.measCV/100*G(i)); 
     RMSE(i)=(G(i)-out.Model_Output.G(idx))^2;
 end
 out.Performance.wres = wres;
