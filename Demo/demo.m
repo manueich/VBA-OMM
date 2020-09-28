@@ -1,6 +1,7 @@
 %% Demo on VBA-OMM
-%   All folders and subfolders of the VBA toolbox as well as the Func folder 
-%   must be in the MATLAB path
+%   All folders and subfolders of the VBA toolbox as well as the Functions
+% folder must be in the MATLAB path
+
 clc
 clear
 %close all
@@ -22,7 +23,9 @@ dat.I = demo_dat(:,3);                              % Insulin
 const.A = 6;                                    % AUC of glucose appearance function in mmol/kg
 const.V = 0.145;                                % volume of glucose distribution in L/kg
 const.dt = 0.1;                                 % integration time step in min
-const.Rap = zeros(1,dat.t(end)/const.dt+1);     % persisting absoption in mmol/kg/min
+const.Rap = [];                                 % persisting absoption in mmol/kg/min. An empty array means no absorption
+% const.Rap = 0.01*...                            % Example of exponetial decay from height 0.01 and rate 0.017     
+%     exp(-0.017*[dat.t(1):const.dt:dat.t(end)]);     
 const.X0 = 0;                                   % initial condition of state X
 const.measCV = 2;                               % CV glucose assay in %
 const.Gb = dat.G(1);                            % basal level of glucose
@@ -36,7 +39,7 @@ opt.alpha = 0.017;                          % decay rate of RaPL'
 opt.full_disp = 1;                          % display figures during inversion 
 
 % Priors
-    % - System Parameters
+    % - System Parameters [median CV]
 priors.p1 = [0.025 25];
 priors.p2 = [0.012 40];
 priors.SI = [7.1e-4 100];

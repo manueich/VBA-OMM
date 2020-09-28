@@ -3,8 +3,8 @@ function [out] = VBA_OMM_G(dat,priors,const,opt)
 % variational Bayesian analysis
 %
 % This function inverts the OMM in the followig form
-%       dG/dt = - G*X - p1*(G-Gb) + (Ra+Rap)/V
-%       dX/dt = - p2* (X - SI*(I-Ib))
+%       dG/dt = - G*X - p1*(G-Gb) + (Ra+Rap)/V      G(0) = G0
+%       dX/dt = - p2* (X - SI*(I-Ib))               X(0) = X0
 %
 % INPUT
 %   - dat: Structure containg the data
@@ -48,8 +48,9 @@ function [out] = VBA_OMM_G(dat,priors,const,opt)
 %       - Gb: Basal level of G in mmol/L
 %       - Ib: Basal level of I in IU
 %       - measCV: measurement uncertainty CV of glucose assay in %
-%       - Rap: Persiting absoption from a previous meal (if present). Rap
-%       is a row vector coinciding with the integration time points on the
+%       - Rap: Persiting absoption from a previous meal. An empty input 
+%       means no persisting absoption. If present, Rap has to be a row 
+%       vector coinciding with the integration time points on the
 %       grid t(1):dt:t(end)
 %
 % OUTPUT out: Structure containing inversion results and input
@@ -102,7 +103,11 @@ try
     A = const.A;    
     V = const.V;
     dt = const.dt;
-    Rap = const.Rap(:)';
+    if isempty(const.Rap)
+        Rap = zeros(1,t(end)/dt+1);
+    else
+        Rap = const.Rap(:)';
+    end
     X0 = const.X0;
     measCV = const.measCV;
     Gb = const.Gb;
@@ -136,7 +141,9 @@ try
             fname = @f_OMM_RaPL;
             tb = opt.tb;
             alpha = opt.alpha;
-            p_k = priors.k;            
+            p_k = priors.k;
+            if tb(1)~=t(1); disp('ERROR: First breakpoint of RaPL must coincide with first datapoint, i.e t=0'); 
+                out = []; return; end
             if tb(end)~=t(end); disp('ERROR: Last breakpoint of RaPL must coincide with last datapoint'); 
                 out = []; return; end
             if size(p_k,1)+2~=length(tb) 
@@ -263,7 +270,7 @@ if full_disp
     xlabel('Time [min]');
 
     subplot(122); hold on; box on;
-    f_plotUncTimeSeries(ti,Ra+Rap,col(1,:),1.5,SigRa);
+    f_plotUncTimeSeries(ti,Ra,col(1,:),1.5,SigRa);
     ylabel('Glucose Appearance [mmol/kg/min]')
     xlabel('Time [min]');
 end
@@ -356,7 +363,7 @@ if full_disp
     xlabel('Time [min]');
 
     subplot(122); hold on; box on;
-    f_plotUncTimeSeries(ti,Ra+Rap,col(1,:),1.5,SigRa);
+    f_plotUncTimeSeries(ti,Ra,col(1,:),1.5,SigRa);
     ylabel('Glucose Appearance [mmol/kg/min]')
     xlabel('Time [min]');
 end
