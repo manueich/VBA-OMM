@@ -4,7 +4,7 @@
 
 clc
 clear
-%close all
+close all
 
 % Load demo glucose and insulin data from Dalla Man et. (2002): "The oral 
 % glucose minimal model: estimation of insulin sensitivity from a meal test"
@@ -25,7 +25,7 @@ const.V = 0.145;                                % volume of glucose distribution
 const.dt = 0.1;                                 % integration time step in min
 const.Rap = [];                                 % persisting absoption in mmol/kg/min. An empty array means no absorption
 % const.Rap = 0.01*...                            % Example of exponetial decay from height 0.01 and rate 0.017     
-%     exp(-0.017*[dat.t(1):const.dt:dat.t(end)]);     
+%      exp(-0.017*[dat.t(1):const.dt:dat.t(end)]);     
 const.X0 = 0;                                   % initial condition of state X
 const.measCV = 2;                               % CV glucose assay in %
 const.Gb = dat.G(1);                            % basal level of glucose
@@ -33,10 +33,10 @@ const.G0 = dat.G(1);                            % initial condition of glucose
 const.Ib = dat.I(1);                            % basal level of insulin
 
 % Construct inversion options
-opt.GA_fun = 'RaPL';                        % glucose appearance function either 'RaPL' or 'RaLN'
+opt.GA_fun = 'RaLN';                        % glucose appearance function either 'RaPL' or 'RaLN'
 opt.tb = [0 10 30 60 90 120 180 300];       % breakpoints of RaPL'
 opt.alpha = 0.017;                          % decay rate of RaPL'
-opt.full_disp = 1;                          % display figures during inversion 
+opt.displayWin = 1;                         % display Figure with inversion results
 
 % Priors
     % - System Parameters [median CV]
@@ -64,3 +64,28 @@ end
 % Call inversion routine
 out = VBA_OMM_G(dat,priors,const,opt);
 
+%%
+
+% clc
+% clear
+% close all
+% 
+% f = figure;
+% tg = uitabgroup(f); 
+% tab1 = uitab(tg,'Title','settings');
+% tab2 = uitab(tg,'Title','Options');
+% 
+% axes('Parent',tab1)
+% subplot(121)
+% plot(1:2)
+% 
+% 
+% 
+% % for ii = 1:2
+% %   thistab = uitab(tg); % build iith tab
+% %   axes('Parent',thistab); % somewhere to plot
+% %   plot(rand(1,100));
+% % end
+% 
+% 
+% 

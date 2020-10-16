@@ -19,7 +19,7 @@ function [out] = VBA_OMM_G(dat,priors,const,opt)
 %       0 and last breakpoint must conincide with last datapoint.
 %       - alpha: Exponential decay rate of RaPL after last breakpoint in
 %       1/min 
-%       - full_disp: 0 or 1 specifying whether full inversion figures are
+%       - displayWin: 0 or 1 specifying whether inversion results are
 %       displayed
 %   - priors: Strcuture spefiying the priors. A coefficient of variation
 %   (CV) of zero means the parameter is fixed and not updated during
@@ -56,7 +56,8 @@ function [out] = VBA_OMM_G(dat,priors,const,opt)
 % OUTPUT out: Structure containing inversion results and input
 %   - priors, options, data, const: see INPUT
 %   - posterior: Structure containing posterior parameter distributions
-%   analogous to prior structure
+%   analogous to prior structure with additional matrix of posterior
+%   correlation coefficients
 %   - Model_Output: Structure containing model output
 %       - t: ODE integration time grid in min
 %       - G, SigG: Model inferred glucose and uncertainty (SD) on t 
@@ -133,7 +134,7 @@ end
 
 % Check opt
 try
-    full_disp = opt.full_disp;
+    displayWin = opt.displayWin;
     GA_fun = opt.GA_fun;
     
     switch GA_fun
@@ -167,9 +168,9 @@ end
 % Construct u
 ti = t(1):dt:t(end);
 Ii = interp1(t,I,ti);
-u(1,:) = ti(1:end-1);
-u(2,:) = Ii(1:end-1)-Ib;
-u(3,:) = Rap(1:end-1);
+u(1,:) = ti(1:end);
+u(2,:) = Ii(1:end)-Ib;
+u(3,:) = Rap(1:end);
 
 % Interpolate Data and construct yout
 Gdat = interp1(t,G,t(1):t(end));
@@ -203,6 +204,8 @@ options.MaxIterInit = 50;
 options.microU = 1;
 options.checkGrads = 0;
 options.f_fname = fname;
+options.verbose = 0;
+options.DisplayWin = 0;
 
 % Construct priors
     % - System parameters
@@ -252,43 +255,13 @@ dim.n_theta = length(options.priors.muTheta);
 dim.n_phi   = 0;
 dim.n       = 2;
 
-%% Simulate priors
-
-if full_disp
-    disp('Simulating model with PRIOR values ...');
-    [X,Ra,SigX,SigRa] = f_simulate(options.priors,u,options,fname);
-
-    col = lines;
-    figure('Units','Normalized','Position',[0.05 0.5 0.4 0.3]),
-    sgtitle('Model ouput and data from PRIOR values');
-    subplot(121); hold on; box on;
-    yyaxis left
-    plot(t,G,'o'); ylabel('Glucose [mmol/L]');
-    f_plotUncTimeSeries(ti,X(1,:),col(1,:),1.5,SigX(1,:));
-    yyaxis right
-    plot(t,I,'-o','Color',col(2,:)); ylabel('Insulin [IU]');
-    xlabel('Time [min]');
-
-    subplot(122); hold on; box on;
-    f_plotUncTimeSeries(ti,Ra,col(1,:),1.5,SigRa);
-    ylabel('Glucose Appearance [mmol/kg/min]')
-    xlabel('Time [min]');
-end
-
-
 %% Model inversion
 
-if full_disp
-    options.verbose = 1;
-    options.DisplayWin = 1;
-else
-    options.verbose = 0;
-    options.DisplayWin = 0;
-end
+if displayWin; disp('Model Inversion ...'); end
 
-disp('Model Inversion ...');
 [posterior,out_TB] = VBA_NLStateSpaceModel(Gdat(2:end),u,fname,@f_g,dim,options);
-disp('DONE ...');
+
+if displayWin; disp('DONE ...'); end
 
 %% Wrapup results
 
@@ -308,19 +281,23 @@ switch GA_fun
         for i=1:length(posterior.muTheta(4:end))
             out.posterior.k(i,:) = [exp(posterior.muTheta(3+i)) sqrt(exp(posterior.SigmaTheta(3+i,3+i))-1)*100];
         end
+        out.posterior.Correlation = f_get_correlation(posterior.muTheta,...
+            posterior.SigmaTheta,1);
     case 'RaLN'
         for i=1:4
             out.posterior.k(i,:) = [exp(posterior.muTheta(3+i)) sqrt(exp(posterior.SigmaTheta(3+i,3+i))-1)*100];
         end
         [out.posterior.k(5,1),out.posterior.k(5,2)] = ...
             f_logistic_mapping(posterior.muTheta(8),posterior.SigmaTheta(8,8),2);
+        out.posterior.Correlation = f_get_correlation(posterior.muTheta,...
+            posterior.SigmaTheta,2);
 end
 
 % Rap for possible next meal
 u_temp = u;
 u_temp(1,:) = u_temp(1,:)+ti(end);
 [~,Ra,~,~] = f_simulate(posterior,u_temp,options,fname);
-out.Model_Output.Rap = Ra - [u_temp(3,:) u_temp(3,end)];
+out.Model_Output.Rap = Ra - u_temp(3,:);
 
 % Model output
 [X,Ra,SigX,SigRa] = f_simulate(posterior,u,options,fname);
@@ -346,28 +323,225 @@ end
 out.Performance.wres = wres;
 out.Performance.RMSE = sqrt(mean(RMSE));
 
-%% Simulate Posterior
+%% Plot Figure with Results
 
-if full_disp
-    disp('Simulating model with POSTERIOR values ...');
-    
+if displayWin
+    disp('Creating Results Figure ...')
     col = lines;
-    figure('Units','Normalized','Position',[0.05 0.1 0.4 0.3]),
-    sgtitle('Model ouput and data from POSTERIOR values');
-    subplot(121); hold on; box on;
-    yyaxis left
-    plot(t,G,'o'); ylabel('Glucose [mmol/L]');
+    % Set up Figure Window
+    pos0 = get(0,'ScreenSize');
+    pos = [0.51*pos0(3),0.3*pos0(4),0.45*pos0(3),0.5*pos0(4)];
+    fig = figure('Name','OMM Results','Position',pos,'menubar','none');
+    tg = uitabgroup(fig);
+    tb5 = uitab(tg,'Title','Summary');
+    tb1 = uitab(tg,'Title','Data');
+    tb2 = uitab(tg,'Title','Priors');
+    tb3 = uitab(tg,'Title','Posterior');
+    tb4 = uitab(tg,'Title','Parameters');
+    
+    % Summary Tab ------------------------------------------------
+    
+    str{1} = ['Inversion results of the oral minimal model using ' GA_fun];
+    str{end+1} = '';    
+    str{end+1} = sprintf('Elaspsed time %.1f seconds',out.VB_Toolbox.out.dt);
+    str{end+1} = '';
+    str{end+1} = 'Model fit criteria';
+    str{end+1} = sprintf('   - R2:  %2.1f %%',out.Performance.R2*100);
+    str{end+1} = sprintf('   - RMSE:  %.2f mmol/L',out.Performance.RMSE);
+    str{end+1} = '';
+    str{end+1} = 'Parameter estimation results [median +/- CV in %]';
+    str{end+1} = sprintf('   - Glucose effectiveness p1 [1E-3 1/min]:  %2.2f +/- %2.1f %%',...
+        out.posterior.p1(1)*1e3,out.posterior.p1(2));
+    str{end+1} = sprintf('   - Decay parameter p2 [1E-3 1/min]:  %2.2f +/- %2.1f %%',...
+        out.posterior.p2(1)*1e3,out.posterior.p2(2));
+    str{end+1} = sprintf('   - Insulin sensitivity SI [1E-4 1/min per IU]:  %2.2f +/- %2.1f %%',...
+        out.posterior.SI(1)*1e4,out.posterior.SI(2));
+    
+    uicontrol('Parent',tb5,...
+        'Style','text',...
+        'units','normalized',...
+        'position',[0.1,0,0.8,0.85],...
+        'fontsize',11,...
+        'HorizontalAlignment','left',...
+        'string',str)        
+   
+    % Data Tab ------------------------------------------------
+    axes('Parent',tb1)
+    sgtitle('Provided DATA');
+    subplot(2,2,1), hold on; box on; 
+    title('Glucose Data')
+    errorbar(t,G,G*const.measCV/100,'o--','Color',col(1,:),'MarkerFaceColor',col(1,:),...
+        'MarkerSize',3);
+    line([t(1) t(end)],[Gb Gb],'LineStyle','-.','Color',col(1,:))
+    ylim([floor(min(G)-1) ceil(max(G)+1)])
+    ylabel('Glucose [mmol/L]');
+    xlabel('Time [min]');    
+    
+    subplot(2,2,2), hold on; box on; 
+    title('Insulin Data')
+    plot(t,I,'o--','Color',col(2,:),'MarkerFaceColor',col(2,:),'MarkerSize',3);
+    line([t(1) t(end)],[Ib Ib],'LineStyle','-.','Color',col(2,:))
+    ylim([0 floor(max(I)+5)])
+    ylabel('Insulin [IU]');
+    xlabel('Time [min]');    
+        
+    subplot(2,2,3), hold on; box on; 
+    title('Persisting Absorption Rap')
+    plot(ti,Rap,'-','Color',col(1,:)); 
+    ylabel('GA [mmol/kg/min]');
+    xlabel('Time [min]');
+    
+    % Prior Tab ------------------------------------------------
+    axes('Parent',tb2)
+    sgtitle('Model ouput and data from PRIOR values');
+    [X,Ra,SigX,SigRa] = f_simulate(options.priors,u,options,fname);
+    
+    subplot(2,2,1), hold on; box on; 
+    title('Glucose G(t)')
+    plot(t,G,'o','Color',col(1,:),'MarkerFaceColor',col(1,:),'MarkerSize',4);
+    line([t(1) t(end)],[Gb Gb],'LineStyle','-.','Color',col(1,:))
     f_plotUncTimeSeries(ti,X(1,:),col(1,:),1.5,SigX(1,:));
-    yyaxis right
-    plot(t,I,'-o','Color',col(2,:)); ylabel('Insulin [IU]');
+    ylabel('Glucose [mmol/L]');
     xlabel('Time [min]');
-
-    subplot(122); hold on; box on;
+    
+    subplot(2,2,2), hold on; box on; 
+    title('Active Insulin X(t)')
+    f_plotUncTimeSeries(ti,X(2,:),col(2,:),1.5,SigX(2,:));
+    ylabel('X [1/min]');
+    xlabel('Time [min]');
+    
+    subplot(2,2,3), hold on; box on; 
+    title('Glucose Absorption Ra(t)')
     f_plotUncTimeSeries(ti,Ra,col(1,:),1.5,SigRa);
-    ylabel('Glucose Appearance [mmol/kg/min]')
+    ylabel('GA [mmol/kg/min]')
     xlabel('Time [min]');
+    
+    % Posterior Tab ------------------------------------------------
+    axes('Parent',tb3)
+    sgtitle('Model ouput and data from POSTERIOR values');
+    [X,Ra,SigX,SigRa] = f_simulate(posterior,u,options,fname);
+    
+    subplot(2,2,1), hold on; box on; 
+    title('Glucose G(t)')
+    plot(t,G,'o','Color',col(1,:),'MarkerFaceColor',col(1,:),'MarkerSize',4);
+    line([t(1) t(end)],[Gb Gb],'LineStyle','-.','Color',col(1,:))
+    f_plotUncTimeSeries(ti,X(1,:),col(1,:),1.5,SigX(1,:));
+    ylabel('Glucose [mmol/L]');
+    xlabel('Time [min]');
+    
+    subplot(2,2,2), hold on; box on; 
+    title('Active Insulin X(t)')
+    f_plotUncTimeSeries(ti,X(2,:),col(2,:),1.5,SigX(2,:));
+    ylabel('X [1/min]');
+    xlabel('Time [min]');
+    
+    subplot(2,2,3), hold on; box on; 
+    title('Glucose Absorption Ra(t)')
+    f_plotUncTimeSeries(ti,Ra,col(1,:),1.5,SigRa);
+    ylabel('GA [mmol/kg/min]')
+    xlabel('Time [min]');
+    
+    subplot(2,2,4), hold on; box on; 
+    title('Weighted Residuals')
+    plot(t,wres,'-o','Color',col(1,:),'MarkerFaceColor',col(1,:),'MarkerSize',4)
+    line([t(1) t(end)],[1 1],'LineStyle','-.','Color','k')
+    line([t(1) t(end)],[-1 -1],'LineStyle','-.','Color','k')
+    line([t(1) t(end)],[0 0],'LineStyle','-','Color','k')
+    xlabel('Time [min]');
+    
+    % Parameters Tab ------------------------------------------------
+    axes('Parent',tb4)
+    sgtitle('Posterior parameter distributions');
+    subplot(2,2,1), hold on; box on; 
+    title('Glucose effectiveness p1')
+    p(1) = plot_dist(options.priors.muTheta(1),sqrt(options.priors.SigmaTheta(1,1)),...
+        priors.p1(1),priors.p1(2),col(1,:));
+    p(2) = plot_dist(posterior.muTheta(1),sqrt(posterior.SigmaTheta(1,1)),...
+        out.posterior.p1(1),out.posterior.p1(2),col(2,:));
+    legend(p,{'Prior Distr.','Posterior Distr.'},'Location','best')
+    xlabel('p_{1} [1/min]'); ylabel('Probability Density')
+    
+    subplot(2,2,2), hold on; box on; 
+    title('Decay parameter p2')
+    p(1) = plot_dist(options.priors.muTheta(2),sqrt(options.priors.SigmaTheta(2,2)),...
+        priors.p2(1),priors.p2(2),col(1,:));
+    p(2) = plot_dist(posterior.muTheta(2),sqrt(posterior.SigmaTheta(2,2)),...
+        out.posterior.p2(1),out.posterior.p2(2),col(2,:));
+    legend(p,{'Prior Distr.','Posterior Distr.'},'Location','best')
+    xlabel('p_{2} [1/min]'); ylabel('Probability Density')
+    
+    subplot(2,2,3), hold on; box on; 
+    title('Insulin Sensitivity SI')
+    p(1) = plot_dist(options.priors.muTheta(3),sqrt(options.priors.SigmaTheta(3,3)),...
+        priors.SI(1),priors.SI(2),col(1,:));
+    p(2) = plot_dist(posterior.muTheta(3),sqrt(posterior.SigmaTheta(3,3)),...
+        out.posterior.SI(1),out.posterior.SI(2),col(2,:));
+    legend(p,{'Prior Distr.','Posterior Distr.'},'Location','best')
+    xlabel('S_{I} [1/min per IU]'); ylabel('Probability Density')
+    
+    subplot(2,2,4), hold on; box on; 
+    title('GA function parameters')
+    p(1)=plot_errorbars([1:size(priors.k,1)]-0.1,priors.k,col(1,:),GA_fun);
+    p(2)=plot_errorbars([1:size(out.posterior.k,1)]+0.1,...
+        out.posterior.k,col(2,:),GA_fun);
+    legend(p,{'Prior Distr.','Posterior Distr.'},'Location','best') 
+    
+    switch GA_fun
+        case 'RaPL'
+            ylabel('GA [mmol/kg/min]');
+            for i=1:size(priors.k,1); labels{i} = ['k' num2str(i)]; end
+            labels{i} = ['k' num2str(i+1)];
+            set(gca,'XTick',1:1:size(priors.k,1));
+            set(gca,'XTickLabels',labels);
+        case 'RaLN'
+            set(gca,'XTick',1:1:size(priors.k,1));
+            set(gca,'XTickLabels',...
+                {'     T_1\newline[10^{2}min]','W_1','     T_2\newline[10^{2}min]','W_2','R_H'});
+    end
+
+end
+
+end
+
+function [p] = plot_dist(mu,sig,med,CV,col)   
+    xp = linspace(0,med+4*(med*CV/100),1000);
+    p = plot(xp,lognpdf(xp,mu,sig),'LineWidth',1.1,'Color',col);
+    line([med med],[0 lognpdf(med,mu,sig)],'LineStyle','--','Color',col)   
+end
+   
+
+function [p] = plot_errorbars(pos,k,col,GA_fun)   
+    
+    switch GA_fun
+        case 'RaPL'
+            for i=1:length(pos)
+                mu = k(i,1);
+                sig = exp(sqrt(log((k(i,2)/100)^2+1)));
+                p = errorbar(pos(i),mu,mu-mu/sig,mu*sig-mu,'o','Color',col,...
+                    'MarkerFaceColor',col,'MarkerSize',5,'LineWidth',1.2);
+            end
+        case 'RaLN'
+            for i=1:length(pos)-1
+                sc = 1; if i==1 || i==3; sc = 0.01; end
+                mu = k(i,1)*sc;
+                sig = exp(sqrt(log((k(i,2)/100)^2+1)));
+                p = errorbar(pos(i),mu,mu-mu/sig,mu*sig-mu,'o','Color',col,...
+                    'MarkerFaceColor',col,'MarkerSize',5,'LineWidth',1.2);
+            end
+            [m_o,s_o] = f_logistic_mapping(k(end,1),k(end,2),1);
+            lo = f_sig(m_o-sqrt(s_o));
+            hi = f_sig(m_o+sqrt(s_o));  
+            mu = k(end,1);
+            errorbar(pos(end),mu,mu-lo,hi-mu,'o','Color',col,...
+                'MarkerFaceColor',col,'MarkerSize',5,'LineWidth',1.2);      
+            
+    end 
 end
 
 
+function s=f_sig(x)
+s = 1./(1+exp(-x));
 end
+    
+
 
