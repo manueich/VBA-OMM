@@ -35,6 +35,10 @@ const.Ib = dat.I(1);                            % basal level of insulin
 % Construct inversion options
 opt.GA_fun = 'RaPL';                        % glucose appearance function either 'RaPL' or 'RaLN'
 opt.tb = [0 10 30 60 90 120 180 300];       % breakpoints of RaPL'
+% NB: the toolbox currrently only supports RaPL with exactly 8
+% breakpoints. The times of these breakpoints can however be chosen freely.
+% Please contact the developers if a different number of breakpoints is
+% required.
 opt.alpha = 0.017;                          % decay rate of RaPL'
 opt.displayWin = 1;                         % display Figure with inversion results
 

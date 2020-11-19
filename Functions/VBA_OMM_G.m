@@ -32,10 +32,13 @@ function [out] = VBA_OMM_G(dat,priors,const,opt)
 %       in 1/min per IU and %
 %       - k: Mx2 matrix specifying median and CV of Ra function parameters.
 %       CV in %.
-%       For RaPL: M=length(tb)-2. Heights of Ra at breakpoints tb in 
+%       For RaPL: M=6. Heights of Ra at breakpoints tb in 
 %       mmol/kg/min, starting  with tb(2). The height at the penultimate 
 %       breakpoint is calculated from the total AUC of RA and therefore 
-%       not specified. 
+%       not specified. NB: the toolbox currrently only supports RaPL with 
+%       exactly 8 breakpoints. The times of these breakpoints can however 
+%       be chosen freely. Please contact the developers if a different 
+%       number of breakpoints is required.
 %       For RaLN: M=5. Representing in order T1 in min, W1 no unit, 
 %       T2 in min, W2 no unit and RH no unit. RH isrestricted to (0,1) 
 %       and is not log-normally distributed.
@@ -260,6 +263,11 @@ dim.n       = 2;
 if displayWin; disp('Model Inversion ...'); end
 
 [posterior,out_TB] = VBA_NLStateSpaceModel(Gdat(2:end),u,fname,@f_g,dim,options);
+if isempty(posterior)
+    disp('Model Inversion FAILED');
+    out = []; 
+    return
+end
 
 if displayWin; disp('DONE ...'); end
 
