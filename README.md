@@ -15,6 +15,6 @@ This software has been developed in the context of a PhD project under the super
 # License
 This software is distributed under a GNU open-source licence. You are free to download and modify it, but we would be most grateful, should you acknowledge the authors by citing the reference below.
 
-... to be determined.
+Manuel M. Eichenlaub, John G. Hattersley, Mary C. Gannon, Frank Q. Nuttall, Natasha A. Khovanova (2020): Bayesian parameter estimation in the oral minimal model of glucose dynamics from non-fasting conditions using a new function of glucose appearance, Computer Methods and Programs in Biomedicine
 
 M. Eichenlaub 10/07/2020
