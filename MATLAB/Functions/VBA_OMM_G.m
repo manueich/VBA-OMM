@@ -207,7 +207,7 @@ options.MaxIterInit = 50;
 options.microU = 1;
 options.checkGrads = 0;
 options.f_fname = fname;
-options.verbose = 0;
+options.verbose = 1;
 options.DisplayWin = 0;
 
 % Construct priors
@@ -273,6 +273,7 @@ if displayWin; disp('DONE ...'); end
 
 %% Wrapup results
 
+out_TB.u = u;
 out.priors = priors;
 out.options = opt;
 out.const = const;
