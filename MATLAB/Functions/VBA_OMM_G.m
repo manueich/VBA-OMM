@@ -207,7 +207,7 @@ options.MaxIterInit = 50;
 options.microU = 1;
 options.checkGrads = 0;
 options.f_fname = fname;
-options.verbose = 1;
+options.verbose = 0;
 options.DisplayWin = 0;
 
 % Construct priors
