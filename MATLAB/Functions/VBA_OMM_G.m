@@ -2,26 +2,26 @@ function [out] = VBA_OMM_G(dat,priors,const,opt)
 %VBA_OMM Inversion of the oral minimal model (OMM) of glucose dynamics using 
 % variational Bayesian analysis
 %
-% This function inverts the OMM in the followig form
+% This function inverts the OMM in the following form
 %       dG/dt = - G*X - p1*(G-Gb) + (Ra+Rap)/V      G(0) = G0
 %       dX/dt = - p2* (X - SI*(I-Ib))               X(0) = X0
 %
 % INPUT
-%   - dat: Structure containg the data
+%   - dat: Structure containing the data
 %       - t: Time of sampling points in min. The first datapoint must be at t=0
 %       - G: Glucose data at time points t in mmol/L
-%       - I: Insulin data at time poinst t in arbitrary insulin unit (IU),
+%       - I: Insulin data at time points t in arbitrary insulin unit (IU),
 %       e.g. mU/L
-%   - opt: Structure specifing inversion options
+%   - opt: Structure specifying inversion options
 %       - GA_fun: Either 'RaPL' or 'RaLN', using either the piecewise
-%       linear or log-normally based fucntions representing Ra
+%       linear or log-normally based functions representing Ra
 %       - tb: Time of breakpoints of RaPL in min. First breakpoint must be 
-%       0 and last breakpoint must conincide with last datapoint.
+%       0 and last breakpoint must coincide with last datapoint.
 %       - alpha: Exponential decay rate of RaPL after last breakpoint in
 %       1/min 
 %       - displayWin: 0 or 1 specifying whether inversion results are
 %       displayed
-%   - priors: Strcuture spefiying the priors. A coefficient of variation
+%   - priors: Structure specifying the priors. A coefficient of variation
 %   (CV) of zero means the parameter is fixed and not updated during
 %   inversion
 %       - p1: 1x2 vector specifying median and CV of log-normal distribution
@@ -35,12 +35,12 @@ function [out] = VBA_OMM_G(dat,priors,const,opt)
 %       For RaPL: M=6. Heights of Ra at breakpoints tb in 
 %       mmol/kg/min, starting  with tb(2). The height at the penultimate 
 %       breakpoint is calculated from the total AUC of RA and therefore 
-%       not specified. NB: the toolbox currrently only supports RaPL with 
+%       not specified. NB: the toolbox currently only supports RaPL with 
 %       exactly 8 breakpoints. The times of these breakpoints can however 
 %       be chosen freely. Please contact the developers if a different 
 %       number of breakpoints is required.
 %       For RaLN: M=5. Representing in order T1 in min, W1 no unit, 
-%       T2 in min, W2 no unit and RH no unit. RH isrestricted to (0,1) 
+%       T2 in min, W2 no unit and RH no unit. RH is restricted to (0,1) 
 %       and is not log-normally distributed.
 %   - const: Structure specifying model constants
 %       - dt: ODE integration step size in min
@@ -51,8 +51,8 @@ function [out] = VBA_OMM_G(dat,priors,const,opt)
 %       - Gb: Basal level of G in mmol/L
 %       - Ib: Basal level of I in IU
 %       - measCV: measurement uncertainty CV of glucose assay in %
-%       - Rap: Persiting absoption from a previous meal. An empty input 
-%       means no persisting absoption. If present, Rap has to be a row 
+%       - Rap: Persisting absorption from a previous meal. An empty input 
+%       means no persisting absorption. If present, Rap has to be a row 
 %       vector coinciding with the integration time points on the
 %       grid t(1):dt:t(end)
 %

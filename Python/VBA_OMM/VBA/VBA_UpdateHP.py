@@ -1,5 +1,5 @@
 import numpy as np
-from Functions.VBA_Python import VBA_basics as base
+from . import VBA_basics as base
 
 
 def UpdateHP(data, t, posterior, priors, suffStat, options):

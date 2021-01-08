@@ -20,7 +20,7 @@ def f_model(X, th, u, inF):
     I = u[1, 0]
     Rap = u[2, 0]
 
-    Ra = RaPL(t, tb, th, A, al)
+    Ra = f_Ra(t, tb, th, A, al)
 
     # Model Equations
     dx = np.zeros((n, 1))
@@ -70,7 +70,7 @@ def f_obs(X, phi, u, inG):
     return gx, dGdX, dGdPhi
 
 
-def RaPL(t, tb, th, A, al):
+def f_Ra(t, tb, th, A, al):
 
     k = np.exp(th[3:np.shape(th)[0], 0])
     s = (-2 * A * al + al * (-k[1] * tb[1] + k[0] * tb[2] - k[2] * tb[2] + k[1] * tb[3] - k[3] * tb[3] + k[2] * tb[4]
@@ -83,7 +83,7 @@ def RaPL(t, tb, th, A, al):
             Ra = k[i-1] + (k[i] - k[i-1]) / (tb[i] - tb[i-1]) * (t - tb[i-1])
 
     if t > tb[np.shape(tb)[0]-1]:
-        Ra = k[np.shape[k][0]-1] * np.exp(-(t - tb[np.shape(tb)[0]-1]) * al)
+        Ra = k[np.shape(k)[0]-1] * np.exp(-(t - tb[np.shape(tb)[0]-1]) * al)
 
     return Ra
 

@@ -5,8 +5,6 @@ import matplotlib.pylab as pl
 
 # --- Inversion Plotting ---
 def plot_data(data):
-    ty = data["t"]
-    yd = data["y"]
 
     fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(12, 6))
     plt.subplots_adjust(left=0.08, bottom=0.05, right=0.95, top=0.95, wspace=0.3, hspace=0.3)

@@ -1,11 +1,12 @@
 import numpy as np
-import Functions.VBA_Python.VBA as VBA
-import Functions.VBA_Python.VBA_NoiseDistConv as NoiseDistConv
-import Functions.logistic_mapping as LogMap
-import Functions.f_OMM_RaPL as f_RaPL
-import Functions.f_OMM_RaLN as f_RaLN
+from . import VBA
+from . import f_OMM_RaPL as f_RaPL
+from . import f_OMM_RaLN as f_RaLN
+from . import logistic_mapping as LogMap
+import matplotlib.pyplot as plt
+import matplotlib.pylab as pl
 
-def VBA_OMM_G(dat, priors, const, opt):
+def main(dat, priors, const, opt):
 
     # ----------------------------------------------
     # Check Inputs
@@ -17,6 +18,9 @@ def VBA_OMM_G(dat, priors, const, opt):
     except:
         print("ERROR: Dat structure is flawed")
         return []
+    if t[0, 0] != 0:
+        print("ERROR: First datapoint must me at t=0")
+        return []
 
     # Check const
     try:
@@ -26,7 +30,7 @@ def VBA_OMM_G(dat, priors, const, opt):
         if not const["Rap"]:
             Rap = np.zeros((1, int(t[0, -1]/dt+1)))
         else:
-            Rap = np.reshape(const["Rap"],(1,const["Rap"]))
+            Rap = np.reshape(const["Rap"], (1, const["Rap"]))
             if np.size(Rap) != t[-1]/dt+1:
                 print("ERROR: Rap is the wrong length")
                 return []
@@ -145,7 +149,7 @@ def VBA_OMM_G(dat, priors, const, opt):
     for i in range(1, np.size(t) - 1):
         iQy.append(np.eye(1)*1/(G[0, i+1]/np.mean(Gi)))
 
-    a, b = NoiseDistConv.ToGamma(np.mean(Gi)*measCV/100, np.mean(Gi)*measCV/100*0.1)
+    a, b = VBA.VBA_NoiseDistConv.ToGamma(np.mean(Gi) * measCV / 100, np.mean(Gi) * measCV / 100 * 0.1)
 
     pr = {"a": a,
           "b": b,
@@ -164,12 +168,13 @@ def VBA_OMM_G(dat, priors, const, opt):
                "f_obs": gname,
                "inF": inF,
                "dim": dim,
-               "verbose": True,
+               "verbose": False,
                "Display": False,
                "updateHP": False,
                "TolFun": 1E-4,
                "GnTolFun": 1e-4,
-               "MaxIter": 100}
+               "MaxIter": 100,
+               "ODESolver": "Euler"}
 
     # -----------------------------------------
     # ---- INVERSION --------
@@ -177,11 +182,11 @@ def VBA_OMM_G(dat, priors, const, opt):
     if displayWin:
         print("Model Inversion ...")
 
-    #try:
-    post, out_TB = VBA.main(data, ti, pr, options)
-    #except:
-    print("Inverison Failed")
-    #return []
+    try:
+        post, out_TB = VBA.VBA_Main.main(data, ti, pr, options)
+    except:
+        print("Inverison Failed")
+        return []
 
     if displayWin:
         print("DONE")
@@ -219,4 +224,118 @@ def VBA_OMM_G(dat, priors, const, opt):
 
     out.update({"posterior": posterior})
 
+    # Rap for possible next meal
+    Rap = get_ModelOut(post, out_TB, ti + t[0, -1], GA_fun)[1]
+    Model_Output = {"Rap": Rap - u[2, :]}
+
+    # Model Output
+    X, Ra, SigX, SigRa = get_ModelOut(post, out_TB, ti, GA_fun)
+
+    Model_Output.update({"t": ti,
+                         "G": X[0:1, :],
+                         "X": X[1:2, :],
+                         "SigG": SigX[0:1, :],
+                         "SigX": SigX[1:2, :],
+                         "Ra": Ra,
+                         "SigRa": SigRa})
+
+    out.update({"Model_Output": Model_Output})
+
+    # Model performance
+    G_pred = out_TB["suffStat"]["gx"]
+    G_dat = data["y"]
+    wres = (G_dat - G_pred) / (const["measCV"]/100*G_dat)
+    RMSE = (G_dat - G_pred) ** 2
+    RMSE = np.sqrt(np.sum(RMSE) / np.size(RMSE))
+
+    Performance = {"FreeEnergy": out_TB["F"],
+                   "R2": out_TB["fit"]["R2"],
+                   "AIC": out_TB["fit"]["AIC"],
+                   "BIC": out_TB["fit"]["BIC"],
+                   "LL": out_TB["fit"]["LL"],
+                   "wres": wres,
+                   "RMSE": RMSE}
+
+    out.update({"Performance": Performance})
+
+    if opt["displayWin"]:
+        create_ResultsFigure(out)
+
+
     return out
+
+
+def get_ModelOut(post, out_TB, t, GA_fun):
+
+    X = out_TB["ModelOut"]["muX"]
+    n = len(out_TB["ModelOut"]["SigmaX"])
+
+    SigX = np.zeros((2, n))
+    Ra = np.zeros((1, n))
+    SigRa = np.zeros((1, n))
+
+    for i in range(0, n):
+        SigX[0, i] = np.sqrt(out_TB["ModelOut"]["SigmaX"][i][0, 0])
+        SigX[1, i] = np.sqrt(out_TB["ModelOut"]["SigmaX"][i][1, 1])
+
+        if GA_fun == "RaPL":
+            Ra[0, i] = f_RaPL.f_Ra(t[0, i], out_TB["options"]["inF"]["tb"],
+                                  post["muTheta"], out_TB["options"]["inF"]["A"],
+                                  out_TB["options"]["inF"]["alpha"]) + out_TB["data"]["u"][2, i]
+
+            Ht = out_TB["ModelOut"]["dXdTh"][i]
+            Ht = Ht[0, 2:-1]
+
+            SigRa[0, i] = np.sqrt(Ht @ post["SigmaTheta"][2:-1, 2:-1] @ Ht.T)
+
+    return X, Ra, SigX, SigRa
+
+
+def create_ResultsFigure(out):
+
+    opt = out["options"]
+    post = out["posterior"]
+    data = out["data"]
+    mo = out["Model_Output"]
+
+    fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(12, 6))
+    plt.subplots_adjust(left=0.08, bottom=0.05, right=0.95, top=0.95, wspace=0.3, hspace=0.3)
+
+    # Summary
+    ax[0, 0].set_title('SUMMARY')
+    ax[0, 0].set_xticks([])
+    ax[0, 0].set_yticks([])
+
+    strgs = ["Results of the OMM using " + opt["GA_fun"]]
+    strgs.append("")
+    strgs.append("Elapsed Time " + str(out["Toolbox"]["out"]["dt"]) + " seconds")
+    strgs.append("")
+    strgs.append("Model Fit criteria")
+    strgs.append("   - R2: " + str(np.round(out["Performance"]["R2"], 3)))
+    strgs.append("   - RMSE: " + str(np.round(out["Performance"]["RMSE"], 2)) + " mmol/L")
+    strgs.append("")
+    strgs.append("Parameters [median +/- CV [%]]")
+    strgs.append("   - p1 [1E-3 1/min]: " + str(np.round(post["p1"][0]*1E3, 2)) + " +/- "
+                 + str(np.round(post["p1"][1], 1)))
+    strgs.append("   - p2 [1E-3 1/min]: " + str(np.round(post["p2"][0]*1E3, 2)) + " +/- "
+                 + str(np.round(post["p2"][1], 1)))
+    strgs.append("   - SI [1E-4 1/min per IU]: " + str(np.round(post["SI"][0]*1E4, 2)) + " +/- "
+                 + str(np.round(post["SI"][1], 1)))
+
+    for i in range(0, len(strgs)):
+        ax[0, 0].text(0.05, 0.9-i/13, strgs[i], color='k')
+
+    # # Data vs Model
+    # ax[0, 1].set_title('Data vs Model Prediction')
+    # ax[0, 1].set_ylabel("Glucose [mmol/L]")
+    # ax[0, 1].set_xlabel("Time [min]")
+    #
+    # # Data
+    # colors = pl.cm.Set1(np.arange(0, 2))
+    # ax[0, 1].plot(data["t"], data["G"], marker='o', markersize=3, ls='--', color=colors[0])
+    # # Model Pred
+    # nD = np.size(mo["t"])
+    # ax[0, 1].plot(mo["t"], mo["G"], color=colors[0])
+    # ax[0, 1].fill_between(mo["t"], mo["G"] - mo["SigG"], mo["G"] - mo["SigG"], alpha=0.2, color=colors[0])
+
+    plt.show()

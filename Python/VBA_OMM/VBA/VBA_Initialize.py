@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.linalg as la
-from Functions.VBA_Python import VBA_basics as base
+from . import VBA_basics as base
 
 
 def Initialize(data, t, priors, options):
@@ -270,7 +270,7 @@ def check_data(options, priors, data, t):
 
     # Check Input
     if not "u" in data:
-        data.update({"u": np.zeros((1, t.size))})
+        # data.update({"u": np.zeros((1, t.size))})
         dim.update({"nu": 0})
     elif np.shape(data["u"])[1] != np.shape(t)[1]:
         raise Exception("Inputs in u must be specified on the ODE integration time step t")

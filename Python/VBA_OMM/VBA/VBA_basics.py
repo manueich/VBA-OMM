@@ -3,6 +3,7 @@ import scipy.linalg as la
 import scipy.special as spec
 import warnings
 
+
 def solveODE(t, muP, SigmaP, u,  options):
     # Function solves the ODE and provides the sensitivity equations,
     # i.e. derivatives of model states and output with respect to parameters and initial conditions
@@ -75,9 +76,10 @@ def Euler(f_model, i, xn, Sthn, Sx0n, u, th, options, dt):
 
     un = u[:, [i]]
 
-    xn2 = xn + dt * f_model(xn, th, un, options["inF"])[0]
-    Sthn2 = Sthn + dt * (f_model(xn, th, un, options["inF"])[2] + f_model(xn, th, un, options["inF"])[1] @ Sthn)
-    Sx0n2 = Sx0n + dt * (f_model(xn, th, un, options["inF"])[1] @ Sx0n)
+    dx, dFdX, dFdth = f_model(xn, th, un, options["inF"])
+    xn2 = xn + dt * dx
+    Sthn2 = Sthn + dt * (dFdth + dFdX @ Sthn)
+    Sx0n2 = Sx0n + dt * (dFdX @ Sx0n)
 
     return xn2, Sthn2, Sx0n2
 
@@ -97,18 +99,20 @@ def Runge_Kutta(f_model, i, xn, Sthn, Sx0n, u, th, options, dt):
 
     # Calculate Sensitivities of model states wrt
         # Evolution Parameters
-    k1 = f_model(xn, th, un, options["inF"])[2] + f_model(xn, th, un, options["inF"])[1] @ Sthn
-    k2 = f_model(xn, th, un, options["inF"])[2] + f_model(xn, th, un, options["inF"])[1] @ (Sthn + dt * k1 / 2)
-    k3 = f_model(xn, th, un, options["inF"])[2] + f_model(xn, th, un, options["inF"])[1] @ (Sthn + dt * k2 / 2)
-    k4 = f_model(xn, th, un, options["inF"])[2] + f_model(xn, th, un, options["inF"])[1] @ (Sthn + dt * k3)
+
+    dx, dFdX, dFdth = f_model(xn, th, un, options["inF"])
+    k1 = dFdth + dFdX @ Sthn
+    k2 = dFdth + dFdX @ (Sthn + dt * k1 / 2)
+    k3 = dFdth + dFdX @ (Sthn + dt * k2 / 2)
+    k4 = dFdth + dFdX @ (Sthn + dt * k3)
 
     Sthn2 = Sthn + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
         # Initial Conditions
-    k1 = f_model(xn, th, un, options["inF"])[1] @ Sx0n
-    k2 = f_model(xn, th, un, options["inF"])[1] @ (Sx0n + dt * k1 / 2)
-    k3 = f_model(xn, th, un, options["inF"])[1] @ (Sx0n + dt * k2 / 2)
-    k4 = f_model(xn, th, un, options["inF"])[1] @ (Sx0n + dt * k3)
+    k1 = dFdX @ Sx0n
+    k2 = dFdX @ (Sx0n + dt * k1 / 2)
+    k3 = dFdX @ (Sx0n + dt * k2 / 2)
+    k4 = dFdX @ (Sx0n + dt * k3)
 
     Sx0n2 = Sx0n + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 

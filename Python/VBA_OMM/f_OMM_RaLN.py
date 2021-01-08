@@ -18,7 +18,7 @@ def f_model(X, th, u, inF):
     I = u[1, 0]
     Rap = u[2, 0]
 
-    Ra = RaLN(t, th, A)[0]
+    Ra = f_Ra(t, th, A)[0]
 
     # Model Equations
     dx = np.zeros((n, 1))
@@ -43,6 +43,7 @@ def f_model(X, th, u, inF):
 
     dFdth = getDth(dFdTh, t, th, V, A)
 
+    temp = dFdth.T
     return dx, dFdX, dFdth
 
 
@@ -68,7 +69,7 @@ def f_obs(X, phi, u, inG):
     return gx, dGdX, dGdPhi
 
 
-def RaLN(t, th, A):
+def f_Ra(t, th, A):
 
     nf = 2
 
@@ -91,11 +92,11 @@ def getDth(dFdTh, t, th, V, A):
     nf = 2
 
     if t == 0:
-        dFdTh[0, nf] = 0
         dFdTh[0, nf+1] = 0
         dFdTh[0, nf+2] = 0
         dFdTh[0, nf+3] = 0
         dFdTh[0, nf+4] = 0
+        dFdTh[0, nf+5] = 0
     else:
         Rh = 1 / (1 + np.exp(-th[nf + 5]))
         fu1 = (1 - Rh) * A / (t * np.sqrt(np.exp(th[nf + 2]) * np.pi)) * np.exp(
@@ -103,12 +104,12 @@ def getDth(dFdTh, t, th, V, A):
         fu2 = A * Rh / (t * np.sqrt(np.exp(th[nf + 4]) * np.pi)) * np.exp(
             -(np.log(t / np.exp(th[nf + 3])) - np.exp(th[nf + 4]) / 2) ** 2 / np.exp(th[nf + 4]))
 
-        dFdTh[0, nf] = 2 * fu1 * np.exp(-th[nf+2]) * (-np.exp(th[nf+2]) / 2 + np.log(t / np.exp(th[nf+1]))) / V
-        dFdTh[0, nf + 1] = fu1 * (-np.exp(th[nf+2])/2 + np.log(t/np.exp(th[nf+1]))+np.exp(-th[nf+2])*(-np.exp(th[nf+2])/2 + np.log(t/np.exp(th[nf+1])))**2)/V - fu1/2/V
+        dFdTh[0, nf + 1] = 2 * fu1 * np.exp(-th[nf+2]) * (-np.exp(th[nf+2]) / 2 + np.log(t / np.exp(th[nf+1]))) / V
+        dFdTh[0, nf + 2] = fu1 * (-np.exp(th[nf+2])/2 + np.log(t/np.exp(th[nf+1]))+np.exp(-th[nf+2])*(-np.exp(th[nf+2])/2 + np.log(t/np.exp(th[nf+1])))**2)/V - fu1/2/V
 
-        dFdTh[0, nf + 2] = 2 * fu2 * np.exp(-th[nf+4]) * (-np.exp(th[nf+4])/2 + np.log(t/np.exp(th[nf+3])))/V
-        dFdTh[0, nf + 3] = fu2 * (-np.exp(th[nf+4])/2 + np.log(t/np.exp(th[nf+3]))+np.exp(-th[nf+4])*(-np.exp(th[nf+4])/2+np.log(t/np.exp(th[nf+3])))**2)/V - fu2/2/V
+        dFdTh[0, nf + 3] = 2 * fu2 * np.exp(-th[nf+4]) * (-np.exp(th[nf+4])/2 + np.log(t/np.exp(th[nf+3])))/V
+        dFdTh[0, nf + 4] = fu2 * (-np.exp(th[nf+4])/2 + np.log(t/np.exp(th[nf+3]))+np.exp(-th[nf+4])*(-np.exp(th[nf+4])/2+np.log(t/np.exp(th[nf+3])))**2)/V - fu2/2/V
 
-        dFdTh[0, nf + 4] = fu2 * np.exp(-th[nf+5])/(1+np.exp(-th[nf+5]))/V - A*Rh/(t*np.sqrt(np.exp(th[nf+2])*np.pi))*np.exp(-(np.log(t/np.exp(th[nf+1]))-np.exp(th[nf+2])/2)**2/np.exp(th[nf+2]))*np.exp(-th[nf+5])/(1+np.exp(-th[nf+5]))/V
+        dFdTh[0, nf + 5] = fu2 * np.exp(-th[nf+5])/(1+np.exp(-th[nf+5]))/V - A*Rh/(t*np.sqrt(np.exp(th[nf+2])*np.pi))*np.exp(-(np.log(t/np.exp(th[nf+1]))-np.exp(th[nf+2])/2)**2/np.exp(th[nf+2]))*np.exp(-th[nf+5])/(1+np.exp(-th[nf+5]))/V
     return dFdTh
 

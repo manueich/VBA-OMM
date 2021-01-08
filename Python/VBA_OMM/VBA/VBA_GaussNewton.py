@@ -1,5 +1,5 @@
 import numpy as np
-from Functions.VBA_Python import VBA_basics as base
+from . import VBA_basics as base
 import warnings
 
 
@@ -140,15 +140,15 @@ def get_move(mu, data, t, posterior, priors, suffStat, options):
                  "dYdX0": dYdX0,
                  "dG_dP": dG_dP}
 
-    suffStat.update({"Iphi": I})
-    suffStat.update({"gx": gx})
-    suffStat.update({"dy": dy})
-    suffStat.update({"dy2": dy2})
-    suffStat.update({"vy": vy})
-    suffStat.update({"dP": dmu0})
-    suffStat.update({"div": div})
-    suffStat.update({"model_out": model_out})
-    suffStat.update({"SigmaP": posterior["SigmaP"]})
+    suffStat.update({"Iphi": I,
+                     "gx": gx,
+                     "dy": dy,
+                     "dy2": dy2,
+                     "vy": vy,
+                     "dP": dmu0,
+                     "div": div,
+                     "model_out": model_out,
+                     "SigmaP": posterior["SigmaP"]})
 
     return I, dmu, Sigma, suffStat
 

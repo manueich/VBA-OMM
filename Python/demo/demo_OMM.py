@@ -1,8 +1,8 @@
 import numpy as np
-from Functions import VBA_OMM_G as Inv
+import VBA_OMM
 import csv
 
-# Read the data from csv file
+# Read the demo data from csv file
 with open('demo_dat.txt') as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=',')
     t = np.zeros((1, 19))
@@ -32,7 +32,7 @@ const = {"A": 6,
          "Ib": dat["I"][0, 0]}
 
 # Construct inversion options
-opt = {"GA_fun": "RaLN",
+opt = {"GA_fun": "RaPL",
        "tb": np.array([0, 10, 30, 60, 90, 120, 180, 300]),
        "alpha": 0.017,
        "displayWin": True}
@@ -58,7 +58,7 @@ if opt["GA_fun"] == 'RaLN':
                                   [0.5, 30],
                                   [0.7, 30]])})
 
-out = Inv.VBA_OMM_G(dat, priors, const, opt)
+out = VBA_OMM.main(dat, priors, const, opt)
 
 print("ja")
 
