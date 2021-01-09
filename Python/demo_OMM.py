@@ -3,7 +3,7 @@ import VBA_OMM
 import csv
 
 # Read the demo data from csv file
-with open('demo_dat.txt') as csv_file:
+with open('.\\demo_dat.txt') as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=',')
     t = np.zeros((1, 19))
     G = np.zeros((1, 19))
@@ -23,7 +23,7 @@ dat = {"t": t,
 # Constants
 const = {"A": 6,
          "V": 0.145,
-         "dt": 1,
+         "dt": 0.1,
          "Rap": [],
          "X0": 0,
          "measCV": 2,
@@ -59,6 +59,3 @@ if opt["GA_fun"] == 'RaLN':
                                   [0.7, 30]])})
 
 out = VBA_OMM.main(dat, priors, const, opt)
-
-print("ja")
-

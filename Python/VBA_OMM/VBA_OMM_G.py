@@ -21,6 +21,9 @@ def main(dat, priors, const, opt):
     if t[0, 0] != 0:
         print("ERROR: First datapoint must me at t=0")
         return []
+    if t[0, 0] >= t[0, -1]:
+        print("ERROR: The given time points are not ascending")
+        return []
 
     # Check const
     try:
@@ -100,8 +103,8 @@ def main(dat, priors, const, opt):
     u[1, :] = np.reshape(Ii, (1, np.shape(Ii)[0])) - Ib
     u[2, :] = Rap
 
-    data = {"y": G[:, 1:np.size(G)],
-            "t": t[:, 1:np.size(G)],
+    data = {"y": G[:, 0:np.size(G)],
+            "t": t[:, 0:np.size(G)],
             "u": u}
 
     inF = {"V": V,
@@ -140,13 +143,12 @@ def main(dat, priors, const, opt):
     SigmaX0 = np.zeros((2, 2))
 
         # - Measurement Noise
-
     Gi = np.interp(np.reshape(ti, np.shape(ti)[1]),
                    np.reshape(t, np.shape(t)[1]),
                    np.reshape(G, np.shape(G)[1]))
 
     iQy = [np.eye(1)*1/(G[0, 1]/np.mean(Gi))]
-    for i in range(1, np.size(t) - 1):
+    for i in range(0, np.size(t) - 1):
         iQy.append(np.eye(1)*1/(G[0, i+1]/np.mean(Gi)))
 
     a, b = VBA.VBA_NoiseDistConv.ToGamma(np.mean(Gi) * measCV / 100, np.mean(Gi) * measCV / 100 * 0.1)
@@ -189,7 +191,7 @@ def main(dat, priors, const, opt):
         return []
 
     if displayWin:
-        print("DONE")
+       print("DONE")
 
     # -----------------------------------------
     # ---- WRAPUP RESULTS --------
@@ -232,10 +234,10 @@ def main(dat, priors, const, opt):
     X, Ra, SigX, SigRa = get_ModelOut(post, out_TB, ti, GA_fun)
 
     Model_Output.update({"t": ti,
-                         "G": X[0:1, :],
-                         "X": X[1:2, :],
-                         "SigG": SigX[0:1, :],
-                         "SigX": SigX[1:2, :],
+                         "G": X[[0], :],
+                         "X": X[[1], :],
+                         "SigG": SigX[[0], :],
+                         "SigX": SigX[[1], :],
                          "Ra": Ra,
                          "SigRa": SigRa})
 
@@ -269,6 +271,7 @@ def get_ModelOut(post, out_TB, t, GA_fun):
 
     X = out_TB["ModelOut"]["muX"]
     n = len(out_TB["ModelOut"]["SigmaX"])
+    n_theta = out_TB["options"]["dim"]["n_theta"]
 
     SigX = np.zeros((2, n))
     Ra = np.zeros((1, n))
@@ -282,11 +285,14 @@ def get_ModelOut(post, out_TB, t, GA_fun):
             Ra[0, i] = f_RaPL.f_Ra(t[0, i], out_TB["options"]["inF"]["tb"],
                                   post["muTheta"], out_TB["options"]["inF"]["A"],
                                   out_TB["options"]["inF"]["alpha"]) + out_TB["data"]["u"][2, i]
+            dFdTh = f_RaPL.f_model(X[:, [i]], post["muTheta"], out_TB["data"]["u"][:, [i]], out_TB["options"]["inF"])[2]
 
-            Ht = out_TB["ModelOut"]["dXdTh"][i]
-            Ht = Ht[0, 2:-1]
+        if GA_fun == "RaLN":
+            Ra[0, i] = f_RaLN.f_Ra(t[0, i], post["muTheta"], out_TB["options"]["inF"]["A"])[0] + out_TB["data"]["u"][2, i]
+            dFdTh = f_RaLN.f_model(X[:, [i]], post["muTheta"], out_TB["data"]["u"][:, [i]], out_TB["options"]["inF"])[2]
 
-            SigRa[0, i] = np.sqrt(Ht @ post["SigmaTheta"][2:-1, 2:-1] @ Ht.T)
+        dFdTh = dFdTh[0, 2:n_theta - 1] * out_TB["options"]["inF"]["V"]
+        SigRa[0, i] = np.sqrt(dFdTh @ post["SigmaTheta"][2:n_theta - 1, 2:n_theta - 1] @ dFdTh.T)
 
     return X, Ra, SigX, SigRa
 
@@ -295,8 +301,10 @@ def create_ResultsFigure(out):
 
     opt = out["options"]
     post = out["posterior"]
+    pr = out["priors"]
     data = out["data"]
     mo = out["Model_Output"]
+    GA_fun = out["options"]["GA_fun"]
 
     fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(12, 6))
     plt.subplots_adjust(left=0.08, bottom=0.05, right=0.95, top=0.95, wspace=0.3, hspace=0.3)
@@ -325,17 +333,108 @@ def create_ResultsFigure(out):
     for i in range(0, len(strgs)):
         ax[0, 0].text(0.05, 0.9-i/13, strgs[i], color='k')
 
-    # # Data vs Model
-    # ax[0, 1].set_title('Data vs Model Prediction')
-    # ax[0, 1].set_ylabel("Glucose [mmol/L]")
-    # ax[0, 1].set_xlabel("Time [min]")
-    #
-    # # Data
-    # colors = pl.cm.Set1(np.arange(0, 2))
-    # ax[0, 1].plot(data["t"], data["G"], marker='o', markersize=3, ls='--', color=colors[0])
-    # # Model Pred
-    # nD = np.size(mo["t"])
-    # ax[0, 1].plot(mo["t"], mo["G"], color=colors[0])
-    # ax[0, 1].fill_between(mo["t"], mo["G"] - mo["SigG"], mo["G"] - mo["SigG"], alpha=0.2, color=colors[0])
+    # Data vs Model
+    ax[0, 1].set_title('Data vs Model Prediction')
+    ax[0, 1].set_ylabel("Glucose [mmol/L]")
+    ax[0, 1].set_xlabel("Time [min]")
+
+    # Data
+    colors = pl.cm.Set1(np.arange(0, 2))
+    ax[0, 1].plot(To1D(data["t"]), To1D(data["G"]), marker='o', markersize=3, ls='--', linewidth=0.5, color=colors[1])
+    ax[0, 1].plot(To1D(data["t"]), out["const"]["Gb"]*np.ones(np.size(data["t"])), ls='--', linewidth=1, color=colors[1])
+    # Model Pred
+    ax[0, 1].plot(To1D(mo["t"]), To1D(mo["G"]), color=colors[1])
+    ax[0, 1].fill_between(To1D(mo["t"]), To1D(mo["G"] - mo["SigG"]), To1D(mo["G"] + mo["SigG"]), alpha=0.2, color=colors[1])
+
+    # Glucose appearance
+    ax[0, 2].set_title('Glucose Appearance')
+    ax[0, 2].set_ylabel("GA [mmol/kg/min]")
+    ax[0, 2].set_xlabel("Time [min]")
+
+    ax[0, 2].plot(To1D(mo["t"]), To1D(mo["Ra"]), color=colors[1])
+    ax[0, 2].fill_between(To1D(mo["t"]), To1D(mo["Ra"] - mo["SigRa"]), To1D(mo["Ra"] + mo["SigRa"]), alpha=0.2, color=colors[1])
+
+    # Weighted Residuals
+    ax[1, 0].set_title('Weighted Residuals')
+    ax[1, 0].set_ylabel("WRES")
+    ax[1, 0].set_xlabel("Time [min]")
+
+    ax[1, 0].plot(To1D(data["t"]), 0 * np.ones(np.size(data["t"])), ls='-', linewidth=1,
+                  color='k')
+    ax[1, 0].plot(To1D(data["t"]), -1 * np.ones(np.size(data["t"])), ls='--', linewidth=1,
+                  color='k')
+    ax[1, 0].plot(To1D(data["t"]), 1 * np.ones(np.size(data["t"])), ls='--', linewidth=1,
+                  color='k')
+    ax[1, 0].plot(To1D(data["t"]), To1D(out["Performance"]["wres"]), marker='o', markersize=3, ls='--', linewidth=1,
+                  color=colors[1])
+
+    # System Parameters
+    ax[1, 1].set_title('System Parameters')
+    ax[1, 1].set_xticks([1, 2, 3])
+    ax[1, 1].set_xticklabels(['p1', 'p2', 'SI'])
+
+    ax[1, 1].errorbar(0.9, float(pr["p1"][0] * 1E3), yerr=getLNbounds(pr["p1"], 1E3), marker='o', color=colors[0])
+    ax[1, 1].errorbar(1.1, float(post["p1"][0]*1E3), yerr=getLNbounds(post["p1"], 1E3), marker='o', color=colors[1])
+
+    ax[1, 1].errorbar(1.9, float(pr["p2"][0] * 1E3), yerr=getLNbounds(pr["p2"], 1E3), marker='o', color=colors[0])
+    ax[1, 1].errorbar(2.1, float(post["p2"][0]*1E3), yerr=getLNbounds(post["p2"], 1E3), marker='o', color=colors[1])
+
+    ax[1, 1].errorbar(2.9, float(pr["SI"][0] * 1E4), yerr=getLNbounds(pr["SI"], 1E4), marker='o', color=colors[0])
+    ax[1, 1].errorbar(3.1, float(post["SI"][0]*1E4), yerr=getLNbounds(post["SI"], 1E4), marker='o', color=colors[1])
+
+    # Input Parameters
+    ni = np.shape(post["k"])[0]
+    ax[1, 2].set_title('Input Parameters')
+    ax[1, 2].set_xticks(range(1, ni+1))
+
+    if GA_fun == "RaPL":
+        for i in range(1, ni+1):
+            ax[1, 2].errorbar(i-0.1, float(pr["k"][i-1, 0] * 1), yerr=getLNbounds(pr["k"][i-1, :], 1), marker='o', color=colors[0])
+            ax[1, 2].errorbar(i+0.1, float(post["k"][i-1, 0] * 1), yerr=getLNbounds(post["k"][i-1, :], 1), marker='o',
+                              color=colors[1])
+            ax[1, 2].set_xticklabels(['k1', 'k2', 'k3', 'k4', 'k5', 'k7'])
+
+    if GA_fun == "RaLN":
+        sc = [0.1, 1, 0.1, 1]
+        for i in range(1, ni):
+            ax[1, 2].errorbar(i-0.1, float(pr["k"][i-1, 0] * sc[i-1]), yerr=getLNbounds(pr["k"][i-1, :], sc[i-1]), marker='o',
+                              color=colors[0])
+            ax[1, 2].errorbar(i+0.1, float(post["k"][i-1, 0] * sc[i-1]), yerr=getLNbounds(post["k"][i-1, :], sc[i-1]), marker='o',
+                              color=colors[1])
+
+        ax[1, 2].errorbar(5 - 0.1, float(pr["k"][4, 0] * 1), yerr=getLogisticbounds(pr["k"][4, :]), marker='o',
+                          color=colors[0])
+        ax[1, 2].errorbar(5 + 0.1, float(post["k"][4, 0] * 1), yerr=getLogisticbounds(post["k"][4, :]), marker='o',
+                          color=colors[1])
+        ax[1, 2].set_xticklabels(['T1', 'W1', 'T2', 'W2', 'Rh'])
+
 
     plt.show()
+
+
+def To1D(x):
+
+    return np.reshape(x, (np.size(x)))
+
+
+def getLNbounds (x, sc):
+
+    mu = float(x[0]) * sc
+    sig = float(np.exp(np.sqrt(np.log((x[1]/100)**2 + 1))))
+
+    up = mu*sig
+    lo = mu/sig
+    dat = np.array([[mu-lo], [up-mu]])
+
+    return dat
+
+def getLogisticbounds (x):
+
+    m_o, s_o = LogMap.f_logistic_mapping(x[0], x[1], 1)
+    lo = LogMap.f_logistic(m_o - np.sqrt(s_o))
+    up = LogMap.f_logistic(m_o + np.sqrt(s_o))
+    mu = x[0]
+
+    dat = np.array([[float(mu-lo)], [float(up-mu)]])
+
+    return dat
