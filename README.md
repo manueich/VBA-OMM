@@ -8,6 +8,9 @@ To use the MATLAB version of the toolbox simiply download all files and subfolde
 To use the Python version of the toolbox is in the folder called Python. It contains a package called "VBA_OMM" with a detailed description in the __init__.py file. The package contains an implementation of the VBA method from my other repository (https://github.com/manueich/VBA-python). To see hwo the package is used look at the script demo_OMM.py.   
 A detailed description of the underlying methodology is found in the publication below.
 
+# Structural Identifiability
+A structural indetifiability analysis of the OMM using the Taylor series approach implemented in Mathematica
+
 # About
 This software has been developed in the context of a PhD project under the supervison of Natasha Khovanova from the School of Engineering at the University of Warwick and John Hattersley from the University Hospitals Coventry and Warwickshire.
 
