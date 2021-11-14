@@ -13,7 +13,7 @@ A structural indetifiability analysis of the OMM using the Taylor series approac
 # About
 This software has been developed in the context of a PhD project under the supervison of Natasha Khovanova from the School of Engineering at the University of Warwick and John Hattersley from the University Hospitals Coventry and Warwickshire.
 
-If you have any questions you can contact me under m.eichenlaub@warwick.ac.uk
+If you have any questions you can contact me under manuel.eichenlaub@gmail.com
 
 # License
 This software is distributed under a GNU open-source licence. You are free to download and modify it, but we would be most grateful, should you acknowledge the authors by citing the following reference:
