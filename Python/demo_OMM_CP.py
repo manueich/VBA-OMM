@@ -3,7 +3,7 @@ import VBA_OMM
 import pandas as pd
 
 # Read the demo data from csv file
-df = pd.read_csv("Data2.csv")
+df = pd.read_csv("Data1.csv")
 t = df["Time [min]"].to_numpy()
 G = df["Glucose [mmol/L]"].to_numpy()
 CP = df["C-Peptide [nmol/L]"].to_numpy()
