@@ -125,10 +125,12 @@ def plot_model(ax, suffStat, posterior, priors, data, options):
 
 
 def clear_axis(ax):
-    ax.lines = []
-    ax.collections = []
-    ax.patches = []
-    ax.texts = []
+    # ax.lines = []
+    # ax.collections = []
+    # ax.patches = []
+    # ax.texts = []
+
+    ax.cla()
 
     return ax
 

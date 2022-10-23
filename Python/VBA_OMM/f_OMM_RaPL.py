@@ -2,7 +2,7 @@ import numpy as np
 
 
 def f_model(X, th, u, inF):
-    # Function defining the ODE evolution of the van der Pol oscillator
+    # Function defining the OMM using RaPL
 
     V = inF["V"]
     Gb = inF["Gb"]

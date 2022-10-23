@@ -184,11 +184,11 @@ def main(dat, priors, const, opt):
     if displayWin:
         print("Model Inversion ...")
 
-    try:
-        post, out_TB = VBA.VBA_Main.main(data, ti, pr, options)
-    except:
-        print("Inverison Failed")
-        return []
+    # try:
+    post, out_TB = VBA.VBA_Main.main(data, ti, pr, options)
+    # except:
+    #     print("Inverison Failed")
+    #     return []
 
     if displayWin:
        print("DONE")
@@ -306,13 +306,14 @@ def create_ResultsFigure(out):
     mo = out["Model_Output"]
     GA_fun = out["options"]["GA_fun"]
 
-    fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(12, 6))
-    plt.subplots_adjust(left=0.08, bottom=0.05, right=0.95, top=0.95, wspace=0.3, hspace=0.3)
+    fig, ax = plt.subplots(nrows=2, ncols=3, figsize=(12, 6),tight_layout=True)
+    # plt.subplots_adjust(left=0.08, bottom=0.05, right=0.95, top=0.95, wspace=0.3, hspace=0.3)
 
     # Summary
     ax[0, 0].set_title('SUMMARY')
     ax[0, 0].set_xticks([])
     ax[0, 0].set_yticks([])
+    ax[0, 0].axis("off")
 
     strgs = ["Results of the OMM using " + opt["GA_fun"]]
     strgs.append("")
@@ -322,12 +323,12 @@ def create_ResultsFigure(out):
     strgs.append("   - R2: " + str(np.round(out["Performance"]["R2"], 3)))
     strgs.append("   - RMSE: " + str(np.round(out["Performance"]["RMSE"], 2)) + " mmol/L")
     strgs.append("")
-    strgs.append("Parameters [median +/- CV [%]]")
-    strgs.append("   - p1 [1E-3 1/min]: " + str(np.round(post["p1"][0]*1E3, 2)) + " +/- "
+    strgs.append(r"Parameters [median $\pm$ CV [%]]")
+    strgs.append(r"   - $p_1$ [$10^{-3}$min$^{-1}$]: " + str(np.round(post["p1"][0]*1E3, 1)) + r" $\pm$ "
                  + str(np.round(post["p1"][1], 1)))
-    strgs.append("   - p2 [1E-3 1/min]: " + str(np.round(post["p2"][0]*1E3, 2)) + " +/- "
+    strgs.append(r"   - $p_2$ [$10^{-3}$min$^{-1}$]: " + str(np.round(post["p2"][0]*1E3, 1)) + r" $\pm$ "
                  + str(np.round(post["p2"][1], 1)))
-    strgs.append("   - SI [1E-4 1/min per IU]: " + str(np.round(post["SI"][0]*1E4, 2)) + " +/- "
+    strgs.append(r"   - $S_{I}$ [$10^{-5}$min$^{-1}$per pmol/l]: " + str(np.round(post["SI"][0]*1E5, 1)) + r" $\pm$ "
                  + str(np.round(post["SI"][1], 1)))
 
     for i in range(0, len(strgs)):
@@ -337,27 +338,31 @@ def create_ResultsFigure(out):
     ax[0, 1].set_title('Data vs Model Prediction')
     ax[0, 1].set_ylabel("Glucose [mmol/L]")
     ax[0, 1].set_xlabel("Time [min]")
+    ax[0, 1].grid()
 
     # Data
-    colors = pl.cm.Set1(np.arange(0, 2))
-    ax[0, 1].plot(To1D(data["t"]), To1D(data["G"]), marker='o', markersize=3, ls='--', linewidth=0.5, color=colors[1])
-    ax[0, 1].plot(To1D(data["t"]), out["const"]["Gb"]*np.ones(np.size(data["t"])), ls='--', linewidth=1, color=colors[1])
+    h1 = ax[0, 1].plot(To1D(data["t"]), To1D(data["G"]), marker='o', markersize=4, ls='--', linewidth=0.5, color="black",label="Data")
+    h2 = ax[0, 1].plot(To1D(data["t"]), out["const"]["Gb"]*np.ones(np.size(data["t"])), ls='--', linewidth=1, color="black",label="Gb")
     # Model Pred
-    ax[0, 1].plot(To1D(mo["t"]), To1D(mo["G"]), color=colors[1])
-    ax[0, 1].fill_between(To1D(mo["t"]), To1D(mo["G"] - mo["SigG"]), To1D(mo["G"] + mo["SigG"]), alpha=0.2, color=colors[1])
+    h3 = ax[0, 1].plot(To1D(mo["t"]), To1D(mo["G"]), color="tab:blue")
+    h4 = ax[0, 1].fill_between(To1D(mo["t"]), To1D(mo["G"] - mo["SigG"]), To1D(mo["G"] + mo["SigG"]), alpha=0.2, color="tab:blue")
+    ax[0,1].legend(handles=[h1[0],h2[0],(h3[0],h4)],labels=["Data","Gb",r"Model Pred. $\pm1\sigma$"])
 
     # Glucose appearance
     ax[0, 2].set_title('Glucose Appearance')
     ax[0, 2].set_ylabel("GA [mmol/kg/min]")
     ax[0, 2].set_xlabel("Time [min]")
+    ax[0, 2].grid()
 
-    ax[0, 2].plot(To1D(mo["t"]), To1D(mo["Ra"]), color=colors[1])
-    ax[0, 2].fill_between(To1D(mo["t"]), To1D(mo["Ra"] - mo["SigRa"]), To1D(mo["Ra"] + mo["SigRa"]), alpha=0.2, color=colors[1])
+    h1 = ax[0, 2].plot(To1D(mo["t"]), To1D(mo["Ra"]), color="tab:blue")
+    h2 = ax[0, 2].fill_between(To1D(mo["t"]), To1D(mo["Ra"] - mo["SigRa"]), To1D(mo["Ra"] + mo["SigRa"]), alpha=0.2, color="tab:blue")
+    ax[0,2].legend(handles=[h1[0],h2],labels=[r"Model Pred. $\pm1\sigma$"]) 
 
     # Weighted Residuals
     ax[1, 0].set_title('Weighted Residuals')
     ax[1, 0].set_ylabel("WRES")
     ax[1, 0].set_xlabel("Time [min]")
+    ax[1, 0].grid()
 
     ax[1, 0].plot(To1D(data["t"]), 0 * np.ones(np.size(data["t"])), ls='-', linewidth=1,
                   color='k')
@@ -366,47 +371,52 @@ def create_ResultsFigure(out):
     ax[1, 0].plot(To1D(data["t"]), 1 * np.ones(np.size(data["t"])), ls='--', linewidth=1,
                   color='k')
     ax[1, 0].plot(To1D(data["t"]), To1D(out["Performance"]["wres"]), marker='o', markersize=3, ls='--', linewidth=1,
-                  color=colors[1])
+                  color="tab:blue")
 
     # System Parameters
-    ax[1, 1].set_title('System Parameters')
+    ax[1, 1].set_title(r'System Parameters (Median$\pm$CV)')
     ax[1, 1].set_xticks([1, 2, 3])
     ax[1, 1].set_xticklabels(['p1', 'p2', 'SI'])
+    ax[1, 1].grid(axis="y")
 
-    ax[1, 1].errorbar(0.9, float(pr["p1"][0] * 1E3), yerr=getLNbounds(pr["p1"], 1E3), marker='o', color=colors[0])
-    ax[1, 1].errorbar(1.1, float(post["p1"][0]*1E3), yerr=getLNbounds(post["p1"], 1E3), marker='o', color=colors[1])
+    ax[1, 1].errorbar(0.9, float(pr["p1"][0] * 1E3), yerr=getLNbounds(pr["p1"], 1E3), marker='o', color="black")
+    ax[1, 1].errorbar(1.1, float(post["p1"][0]*1E3), yerr=getLNbounds(post["p1"], 1E3), marker='o', color="tab:blue")
 
-    ax[1, 1].errorbar(1.9, float(pr["p2"][0] * 1E3), yerr=getLNbounds(pr["p2"], 1E3), marker='o', color=colors[0])
-    ax[1, 1].errorbar(2.1, float(post["p2"][0]*1E3), yerr=getLNbounds(post["p2"], 1E3), marker='o', color=colors[1])
+    ax[1, 1].errorbar(1.9, float(pr["p2"][0] * 1E3), yerr=getLNbounds(pr["p2"], 1E3), marker='o', color="black")
+    ax[1, 1].errorbar(2.1, float(post["p2"][0]*1E3), yerr=getLNbounds(post["p2"], 1E3), marker='o', color="tab:blue")
 
-    ax[1, 1].errorbar(2.9, float(pr["SI"][0] * 1E4), yerr=getLNbounds(pr["SI"], 1E4), marker='o', color=colors[0])
-    ax[1, 1].errorbar(3.1, float(post["SI"][0]*1E4), yerr=getLNbounds(post["SI"], 1E4), marker='o', color=colors[1])
+    h0 = ax[1, 1].errorbar(2.9, float(pr["SI"][0] * 1E4), yerr=getLNbounds(pr["SI"], 1E4), marker='o', color="black")
+    h1 = ax[1, 1].errorbar(3.1, float(post["SI"][0]*1E4), yerr=getLNbounds(post["SI"], 1E4), marker='o', color="tab:blue")
+    ax[1,1].legend(handles=[h0,h1],labels=["Prior","Posterior"])
 
     # Input Parameters
     ni = np.shape(post["k"])[0]
-    ax[1, 2].set_title('Input Parameters')
+    ax[1, 2].set_title(r'Input Parameters (Median$\pm$CV)')
     ax[1, 2].set_xticks(range(1, ni+1))
+    ax[1, 2].grid(axis="y")
 
     if GA_fun == "RaPL":
         for i in range(1, ni+1):
-            ax[1, 2].errorbar(i-0.1, float(pr["k"][i-1, 0] * 1), yerr=getLNbounds(pr["k"][i-1, :], 1), marker='o', color=colors[0])
-            ax[1, 2].errorbar(i+0.1, float(post["k"][i-1, 0] * 1), yerr=getLNbounds(post["k"][i-1, :], 1), marker='o',
-                              color=colors[1])
+            h0 = ax[1, 2].errorbar(i-0.1, float(pr["k"][i-1, 0] * 1), yerr=getLNbounds(pr["k"][i-1, :], 1), marker='o', color="black")
+            h1 = ax[1, 2].errorbar(i+0.1, float(post["k"][i-1, 0] * 1), yerr=getLNbounds(post["k"][i-1, :], 1), marker='o',
+                              color="tab:blue")
             ax[1, 2].set_xticklabels(['k1', 'k2', 'k3', 'k4', 'k5', 'k7'])
+        ax[1,2].legend(handles=[h0,h1],labels=["Prior","Posterior"])
 
     if GA_fun == "RaLN":
         sc = [0.1, 1, 0.1, 1]
         for i in range(1, ni):
             ax[1, 2].errorbar(i-0.1, float(pr["k"][i-1, 0] * sc[i-1]), yerr=getLNbounds(pr["k"][i-1, :], sc[i-1]), marker='o',
-                              color=colors[0])
+                              color="black")
             ax[1, 2].errorbar(i+0.1, float(post["k"][i-1, 0] * sc[i-1]), yerr=getLNbounds(post["k"][i-1, :], sc[i-1]), marker='o',
-                              color=colors[1])
+                              color="tab:blue")
 
-        ax[1, 2].errorbar(5 - 0.1, float(pr["k"][4, 0] * 1), yerr=getLogisticbounds(pr["k"][4, :]), marker='o',
-                          color=colors[0])
-        ax[1, 2].errorbar(5 + 0.1, float(post["k"][4, 0] * 1), yerr=getLogisticbounds(post["k"][4, :]), marker='o',
-                          color=colors[1])
+        h0 = ax[1, 2].errorbar(5 - 0.1, float(pr["k"][4, 0] * 1), yerr=getLogisticbounds(pr["k"][4, :]), marker='o',
+                          color="black")
+        h1 = ax[1, 2].errorbar(5 + 0.1, float(post["k"][4, 0] * 1), yerr=getLogisticbounds(post["k"][4, :]), marker='o',
+                          color="tab:blue")
         ax[1, 2].set_xticklabels(['T1', 'W1', 'T2', 'W2', 'Rh'])
+        ax[1,2].legend(handles=[h0,h1],labels=["Prior","Posterior"])
 
 
     plt.show()

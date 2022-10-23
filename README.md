@@ -1,11 +1,13 @@
 # VBA-OMM
 Identification of the Oral Minimal Model of glucose dynamcis from non-fasting conditions using Variational Bayesian Analysis.
 
+**UPDATE: The Python implementation now also contains the OMM of C-peptide dynamics to infer beta-cell responsivity. See the respective __init__.py script for details.**
+
 # MATLAB
 To use the MATLAB version of the toolbox simiply download all files and subfolders in folder MATLAB and add them to your path. The main function is called VBA_OMM_G.m and contains a detailed description on how to use it. To see how the function is used and its inputs are defined, you can run the respective script in the \demo folder. A detailed description of the underlying methodology is found in the open-access publication below. The core of the VBA approach in MATLAB is copied from the following wesite http://mbb-team.github.io/VBA-toolbox/.
 
 # Python 
-To use the Python version of the toolbox is in the folder called Python. It contains a package called "VBA_OMM" with a detailed description in the __init__.py file. The package contains an implementation of the VBA method from my other repository (https://github.com/manueich/VBA-python). To see hwo the package is used look at the script demo_OMM.py. A detailed description of the underlying methodology is found in the open-access publication below.
+To use the Python version of the toolbox is in the folder called Python. It contains a package called "VBA_OMM" with a detailed description in the __init__.py file. The package contains an implementation of the VBA method from my other repository (https://github.com/manueich/VBA-python). To see how the package is used look at the script demo_OMM.py. A detailed description of the underlying methodology is found in the open-access publication below.
 
 # Structural Identifiability
 A structural indetifiability analysis of the OMM using the Taylor series approach implemented in Mathematica
