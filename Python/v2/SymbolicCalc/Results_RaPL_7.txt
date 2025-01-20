@@ -1,0 +1,34 @@
+Solution for s
+s = (-2*A*al - al*tb[0]*exp(th[3]) - al*tb[1]*exp(th[4]) + al*tb[2]*exp(th[3]) - al*tb[2]*exp(th[5]) + al*tb[3]*exp(th[4]) - al*tb[3]*exp(th[6]) + al*tb[4]*exp(th[5]) - al*tb[4]*exp(th[7]) + al*tb[5]*exp(th[6]) + al*tb[6]*exp(th[7]) - al*tb[6]*exp(th[8]) + al*tb[7]*exp(th[8]) + 2*exp(th[8]))/(al*(tb[5] - tb[7]))
+
+Derivatives
+if tb[0] <= t <= tb[1]:
+	dFdTh[0, nf] = (t - tb[0])*exp(th[3])/(V*(-tb[0] + tb[1]))
+elif tb[1] <= t <= tb[2]:
+	dFdTh[0, nf] = (-(t - tb[1])*exp(th[3])/(-tb[1] + tb[2]) + exp(th[3]))/V
+	dFdTh[0, nf+1] = (t - tb[1])*exp(th[4])/(V*(-tb[1] + tb[2]))
+elif tb[2] <= t <= tb[3]:
+	dFdTh[0, nf+1] = (-(t - tb[2])*exp(th[4])/(-tb[2] + tb[3]) + exp(th[4]))/V
+	dFdTh[0, nf+2] = (t - tb[2])*exp(th[5])/(V*(-tb[2] + tb[3]))
+elif tb[3] <= t <= tb[4]:
+	dFdTh[0, nf+2] = (-(t - tb[3])*exp(th[5])/(-tb[3] + tb[4]) + exp(th[5]))/V
+	dFdTh[0, nf+3] = (t - tb[3])*exp(th[6])/(V*(-tb[3] + tb[4]))
+elif tb[4] <= t <= tb[5]:
+	dFdTh[0, nf+3] = (-(t - tb[4])*exp(th[6])/(-tb[4] + tb[5]) + exp(th[6]))/V
+	dFdTh[0, nf+4] = (t - tb[4])*exp(th[7])/(V*(-tb[4] + tb[5]))
+elif tb[5] <= t <= tb[6]:
+	dFdTh[0, nf] = (t - tb[5])*(-al*tb[0]*exp(th[3]) + al*tb[2]*exp(th[3]))/(V*al*(-tb[5] + tb[6])*(tb[5] - tb[7]))
+	dFdTh[0, nf+1] = (t - tb[5])*(-al*tb[1]*exp(th[4]) + al*tb[3]*exp(th[4]))/(V*al*(-tb[5] + tb[6])*(tb[5] - tb[7]))
+	dFdTh[0, nf+2] = (t - tb[5])*(-al*tb[2]*exp(th[5]) + al*tb[4]*exp(th[5]))/(V*al*(-tb[5] + tb[6])*(tb[5] - tb[7]))
+	dFdTh[0, nf+3] = (t - tb[5])*(-al*tb[3]*exp(th[6]) + al*tb[5]*exp(th[6]))/(V*al*(-tb[5] + tb[6])*(tb[5] - tb[7]))
+	dFdTh[0, nf+4] = ((t - tb[5])*(-exp(th[7]) + (-al*tb[4]*exp(th[7]) + al*tb[6]*exp(th[7]))/(al*(tb[5] - tb[7])))/(-tb[5] + tb[6]) + exp(th[7]))/V
+	dFdTh[0, nf+5] = (t - tb[5])*(-al*tb[6]*exp(th[8]) + al*tb[7]*exp(th[8]) + 2*exp(th[8]))/(V*al*(-tb[5] + tb[6])*(tb[5] - tb[7]))
+elif tb[6] <= t <= tb[7]:
+	dFdTh[0, nf] = (-(t - tb[6])*(-al*tb[0]*exp(th[3]) + al*tb[2]*exp(th[3]))/(al*(tb[5] - tb[7])*(-tb[6] + tb[7])) + (-al*tb[0]*exp(th[3]) + al*tb[2]*exp(th[3]))/(al*(tb[5] - tb[7])))/V
+	dFdTh[0, nf+1] = (-(t - tb[6])*(-al*tb[1]*exp(th[4]) + al*tb[3]*exp(th[4]))/(al*(tb[5] - tb[7])*(-tb[6] + tb[7])) + (-al*tb[1]*exp(th[4]) + al*tb[3]*exp(th[4]))/(al*(tb[5] - tb[7])))/V
+	dFdTh[0, nf+2] = (-(t - tb[6])*(-al*tb[2]*exp(th[5]) + al*tb[4]*exp(th[5]))/(al*(tb[5] - tb[7])*(-tb[6] + tb[7])) + (-al*tb[2]*exp(th[5]) + al*tb[4]*exp(th[5]))/(al*(tb[5] - tb[7])))/V
+	dFdTh[0, nf+3] = (-(t - tb[6])*(-al*tb[3]*exp(th[6]) + al*tb[5]*exp(th[6]))/(al*(tb[5] - tb[7])*(-tb[6] + tb[7])) + (-al*tb[3]*exp(th[6]) + al*tb[5]*exp(th[6]))/(al*(tb[5] - tb[7])))/V
+	dFdTh[0, nf+4] = (-(t - tb[6])*(-al*tb[4]*exp(th[7]) + al*tb[6]*exp(th[7]))/(al*(tb[5] - tb[7])*(-tb[6] + tb[7])) + (-al*tb[4]*exp(th[7]) + al*tb[6]*exp(th[7]))/(al*(tb[5] - tb[7])))/V
+	dFdTh[0, nf+5] = ((t - tb[6])*(exp(th[8]) - (-al*tb[6]*exp(th[8]) + al*tb[7]*exp(th[8]) + 2*exp(th[8]))/(al*(tb[5] - tb[7])))/(-tb[6] + tb[7]) + (-al*tb[6]*exp(th[8]) + al*tb[7]*exp(th[8]) + 2*exp(th[8]))/(al*(tb[5] - tb[7])))/V
+else:
+	dFdTh[0, nf+5] = exp(th[8])*exp(-al*(t - tb[7]))/V
